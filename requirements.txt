@@ -1,0 +1,2 @@
+streamlit>=1.36
+streamlit-autorefresh>=1.0  # (선택) 타이머 자동 갱신용
