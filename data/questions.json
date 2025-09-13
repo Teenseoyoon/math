@@ -22,19 +22,19 @@
   "수(하)": [
     {
       "question": "",
-      "image": "data/images/수(상)/수(하)1.png",
+      "image": "data/images/수(하)/수(하)1.png",
       "choices": ["①","②","③","④","⑤"],
       "answer": 2
     },
     {
       "question": "",
-      "image": "data/images/수(상)/수(하)2.png",
+      "image": "data/images/수(하)/수(하)2.png",
       "choices": ["①","②","③","④","⑤"],
       "answer": 0
     },
     {
       "question": "",
-      "image": "data/images/수(상)/수(하)3.png",
+      "image": "data/images/수(하)/수(하)3.png",
       "choices": ["①","②","③","④","⑤"],
       "answer": 3
     }
@@ -42,19 +42,19 @@
   "수1": [
     {
       "question": "",
-      "image": "data/images/수(상)/수11.png",
+      "image": "data/images/수1/수11.png",
       "choices": ["①","②","③","④","⑤"],
       "answer": 2
     },
     {
       "question": "",
-      "image": "data/images/수(상)/수12.png",
+      "image": "data/images/수1/수12.png",
       "choices": ["①","②","③","④","⑤"],
       "answer": 0
     },
     {
       "question": "",
-      "image": "data/images/수(상)/수13.png",
+      "image": "data/images/수1/수13.png",
       "choices": ["①","②","③","④","⑤"],
       "answer": 3
     }
@@ -62,21 +62,21 @@
   "수2": [
     {
       "question": "",
-      "image": "data/images/수(상)/수21.png",
+      "image": "data/images/수2/수21.png",
       "choices": ["①","②","③","④","⑤"],
       "answer": 2
     },
     {
       "question": "",
-      "image": "data/images/수(상)/수22.png",
+      "image": "data/images/수2/수22.png",
       "choices": ["①","②","③","④","⑤"],
       "answer": 0
     },
     {
       "question": "",
-      "image": "data/images/수(상)/수23.png",
+      "image": "data/images/수2/수23.png",
       "choices": ["①","②","③","④","⑤"],
       "answer": 3
     }
-  ],
+  ]
 }
