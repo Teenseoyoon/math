@@ -2,21 +2,81 @@
   "수(상)": [
     {
       "question": "",
-      "image": "data/images/수(상)/q1.png",
-      "choices": ["1","2","3","4"],
+      "image": "data/images/수(상)/수(상)1.png",
+      "choices": ["①","②","③","④","⑤"],
       "answer": 2
     },
     {
       "question": "",
-      "image": "data/images/수(상)/q2.png",
-      "choices": ["가","나","다","라"],
+      "image": "data/images/수(상)/수(상)2.png",
+      "choices": ["①","②","③","④","⑤"],
       "answer": 0
     },
     {
       "question": "",
-      "image": "data/images/수(상)/q3.png",
-      "choices": ["①","②","③","④"],
+      "image": "data/images/수(상)/수(상)3.png",
+      "choices": ["①","②","③","④"."⑤"],
       "answer": 3
     }
-  ]
+  ],
+  "수(하)": [
+    {
+      "question": "",
+      "image": "data/images/수(상)/수(하)1.png",
+      "choices": ["①","②","③","④","⑤"],
+      "answer": 2
+    },
+    {
+      "question": "",
+      "image": "data/images/수(상)/수(하)2.png",
+      "choices": ["①","②","③","④","⑤"],
+      "answer": 0
+    },
+    {
+      "question": "",
+      "image": "data/images/수(상)/수(하)3.png",
+      "choices": ["①","②","③","④"."⑤"],
+      "answer": 3
+    }
+  ],
+  "수1": [
+    {
+      "question": "",
+      "image": "data/images/수(상)/수11.png",
+      "choices": ["①","②","③","④","⑤"],
+      "answer": 2
+    },
+    {
+      "question": "",
+      "image": "data/images/수(상)/수12.png",
+      "choices": ["①","②","③","④","⑤"],
+      "answer": 0
+    },
+    {
+      "question": "",
+      "image": "data/images/수(상)/수13.png",
+      "choices": ["①","②","③","④"."⑤"],
+      "answer": 3
+    }
+  ],
+  "수2": [
+    {
+      "question": "",
+      "image": "data/images/수(상)/수21.png",
+      "choices": ["①","②","③","④","⑤"],
+      "answer": 2
+    },
+    {
+      "question": "",
+      "image": "data/images/수(상)/수22.png",
+      "choices": ["①","②","③","④","⑤"],
+      "answer": 0
+    },
+    {
+      "question": "",
+      "image": "data/images/수(상)/수23.png",
+      "choices": ["①","②","③","④"."⑤"],
+      "answer": 3
+    }
+  ],
 }
