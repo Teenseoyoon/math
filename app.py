@@ -1,6 +1,5 @@
 # app.py
 import json
-import os
 from pathlib import Path
 import streamlit as st
 
@@ -18,33 +17,29 @@ def load_questions():
         return {}
     with open(JSON_PATH, "r", encoding="utf-8") as f:
         data = json.load(f)
-    # 보정: 비어 있는 과목은 빈 리스트라도 유지
     for k, v in list(data.items()):
         if v is None:
             data[k] = []
     return data
 
 def get_subject_list(qbank: dict):
-    # 문제 있는 과목만 우선 노출 (완전 빈 과목도 선택하려면 아래 주석 해제)
     subjects = [k for k, v in qbank.items() if isinstance(v, list) and len(v) > 0]
-    if not subjects:  # 전부 비어있다면 키 전부 노출
+    if not subjects:
         subjects = list(qbank.keys())
     return subjects
 
 def ensure_session_keys():
     if "qbank" not in st.session_state:
         st.session_state.qbank = load_questions()
-
     if "subject" not in st.session_state:
         subs = get_subject_list(st.session_state.qbank)
         st.session_state.subject = subs[0] if subs else None
-
     if "qidx" not in st.session_state:
         st.session_state.qidx = 0
-
     if "responses" not in st.session_state:
-        # responses = { subject: { qidx: {"choice": int, "is_correct": bool} } }
         st.session_state.responses = {}
+    if "started" not in st.session_state:
+        st.session_state.started = False  # ← 시작 화면 토글
 
 def get_current_question():
     subject = st.session_state.subject
@@ -71,36 +66,80 @@ def get_saved_choice(subject, qidx):
         return None
 
 # ---------------------------
-# Sidebar
+# App Start
 # ---------------------------
 ensure_session_keys()
 qbank = st.session_state.qbank
 subjects = get_subject_list(qbank)
 
+# ---- 시작 화면 (랜딩) ----
+if not st.session_state.started:
+    st.title("🧮 수학 문제 풀이")
+    st.subheader("교과 선택형 이미지 문제")
+    st.markdown(
+        "- 교과: **수(상), 수(하), 수1, 수2**\n"
+        "- 각 교과별 **3문제**, 보기 **①~⑤**\n"
+        "- 이미지는 GitHub 저장소의 `data/images/교과명/` 에서 불러옵니다."
+    )
+    # 간단한 진행 요약(있다면)
+    total_subjects_with_q = sum(1 for k, v in qbank.items() if isinstance(v, list) and len(v) > 0)
+    total_questions = sum(len(v) for v in qbank.values() if isinstance(v, list))
+    st.caption(f"현재 등록된 문제: {total_subjects_with_q}개 교과, 총 {total_questions}문항")
+
+    if st.button("문제 풀기 시작 ▶", type="primary", use_container_width=True):
+        st.session_state.started = True
+        st.rerun()
+
+    with st.expander("폴더 구조 보기"):
+        st.code(
+            "math/\n"
+            " ├─ app.py\n"
+            " ├─ requirements.txt\n"
+            " ├─ runtime.txt\n"
+            " ├─ data/\n"
+            " │    ├─ questions.json\n"
+            " │    └─ images/\n"
+            " │         ├─ 수(상)/q1.png q2.png q3.png\n"
+            " │         ├─ 수(하)/q1.png q2.png q3.png\n"
+            " │         ├─ 수1/q1.png q2.png q3.png\n"
+            " │         └─ 수2/q1.png q2.png q3.png\n"
+            " └─ README.md",
+            language="text",
+        )
+    st.stop()
+
+# ---------------------------
+# Sidebar
+# ---------------------------
 with st.sidebar:
     st.header("설정")
+    st.button("처음 화면으로", on_click=lambda: st.session_state.update({"started": False}), use_container_width=True)
+    st.markdown("---")
+
     if subjects:
-        new_subj = st.selectbox("교과 선택", subjects, index=subjects.index(st.session_state.subject) if st.session_state.subject in subjects else 0)
+        new_subj = st.selectbox(
+            "교과 선택",
+            subjects,
+            index=subjects.index(st.session_state.subject) if st.session_state.subject in subjects else 0,
+        )
         if new_subj != st.session_state.subject:
             st.session_state.subject = new_subj
             st.session_state.qidx = 0
     else:
         st.info("questions.json에 과목/문제를 추가해 주세요.")
 
-    # 현재 과목의 전체 문항 수
     current_list = qbank.get(st.session_state.subject, [])
     total_q = len(current_list)
     if total_q > 0:
         new_idx = st.number_input("문항 번호", min_value=1, max_value=total_q, value=st.session_state.qidx + 1, step=1)
-        # number_input은 1-based로 보였으면 좋으니 내부는 0-based로 보정
         if (new_idx - 1) != st.session_state.qidx:
             st.session_state.qidx = int(new_idx - 1)
 
     st.markdown("---")
-    st.caption("Tip: 이미지/JSON 경로가 맞지 않으면 아래 본문에 오류가 표시됩니다.")
+    st.caption("Tip: 이미지/JSON 경로가 맞지 않으면 본문에 오류가 표시됩니다.")
 
 # ---------------------------
-# Main UI
+# Main UI (문제 화면)
 # ---------------------------
 st.title("🧮 수학 문제 풀이")
 
@@ -116,13 +155,13 @@ if question is None:
     st.info(f"현재 선택된 교과 **{subject}** 에 등록된 문제가 없습니다.")
     st.stop()
 
-# 문제 이미지 & 본문
 colL, colR = st.columns([1, 1])
 with colL:
     st.subheader(f"{subject} - {qidx+1}번")
     qtext = question.get("question", "").strip()
     if qtext:
         st.markdown(qtext)
+
 with colR:
     img_path = question.get("image", "")
     if not img_path:
@@ -133,17 +172,20 @@ with colR:
         else:
             st.image(img_path, caption=f"{subject} {qidx+1}번", use_container_width=True)
 
-# 선택지
 raw_choices = question.get("choices", [])
 choices = raw_choices if raw_choices else ["①", "②", "③", "④", "⑤"]
 
-# 저장된 응답(있으면 복원)
 saved_choice = get_saved_choice(subject, qidx)
 preselect_index = saved_choice if (isinstance(saved_choice, int) and 0 <= saved_choice < len(choices)) else 0
 
-selected = st.radio("정답을 선택하세요", options=list(range(len(choices))), format_func=lambda i: choices[i], index=preselect_index, horizontal=True)
+selected = st.radio(
+    "정답을 선택하세요",
+    options=list(range(len(choices))),
+    format_func=lambda i: choices[i],
+    index=preselect_index,
+    horizontal=True,
+)
 
-# 정답 확인
 correct_index = question.get("answer", None)
 
 btn_cols = st.columns([1, 1, 1, 2])
@@ -154,13 +196,11 @@ with btn_cols[1]:
 with btn_cols[2]:
     nxt = st.button("다음 문제", disabled=(qidx >= total_q - 1))
 
-# 판정 & 네비게이션
 if check:
     if correct_index is None:
         st.error("questions.json에 `answer`가 비어 있습니다.")
     else:
-        # ⚠️ 가정: answer는 0-based 인덱스 (예: 2 → '③')
-        is_correct = (selected == int(correct_index))
+        is_correct = (selected == int(correct_index))  # 0-based 정답 인덱스 가정
         record_response(subject, qidx, selected, is_correct)
         if is_correct:
             st.success(f"정답입니다! ✅  (선택: {choices[selected]})")
@@ -178,7 +218,6 @@ if nxt:
     st.session_state.qidx = min(total_q - 1, qidx + 1)
     st.rerun()
 
-# 하단: 진행 요약
 st.markdown("---")
 resp = st.session_state.responses.get(subject, {})
 solved = len(resp)
