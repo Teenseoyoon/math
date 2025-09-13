@@ -1,218 +1,187 @@
-import streamlit as st
+# app.py
 import json
-import random
-import time
+import os
 from pathlib import Path
+import streamlit as st
 
-# -------------------------------
-# App constants
-# -------------------------------
-QUIZ_SECONDS = 5 * 60  # 5분
-SUBJECTS = ["수(상)", "수(하)", "수1", "수2"]
-DATA_PATH = Path("data/questions.json")
+DATA_DIR = Path("data")
+JSON_PATH = DATA_DIR / "questions.json"
 
-# -------------------------------
-# Sample fallback questions
-# -------------------------------
-SAMPLE_QUESTIONS = {
-    "수(상)": [
-        {"question": "함수 f(x)=x^2-4x+5의 최소값은?",
-         "choices": ["0", "1", "2", "3"],
-         "answer": 1,
-         "explanation": "완전제곱식 (x-2)^2+1 ⇒ 최소값 1"}
-    ],
-    "수(하)": [
-        {"question": "등차수열 3,7,11,... 의 10번째 항은?",
-         "choices": ["37", "39", "41", "43"],
-         "answer": 1,
-         "explanation": "a_n=3+(n-1)*4 ⇒ a_10=39"}
-    ],
-    "수1": [
-        {"question": "함수 y=sin x의 최대값은?",
-         "choices": ["-1", "0", "1", "2"],
-         "answer": 2,
-         "explanation": "sin x의 최댓값은 1"}
-    ],
-    "수2": [
-        {"question": "지수함수 y=2^x에서 y=16일 때 x는?",
-         "choices": ["2", "3", "4", "5"],
-         "answer": 2,
-         "explanation": "2^x=16=2^4 ⇒ x=4"}
-    ]
-}
+st.set_page_config(page_title="수학 문제 풀이", page_icon="🧮", layout="centered")
 
-# -------------------------------
-# Utils
-# -------------------------------
-def load_questions() -> dict:
-    try:
-        if DATA_PATH.exists():
-            with open(DATA_PATH, "r", encoding="utf-8") as f:
-                data = json.load(f)
-            for subj in SUBJECTS:
-                data.setdefault(subj, [])
-            return data
-    except Exception:
-        pass
-    return SAMPLE_QUESTIONS
+# ---------------------------
+# Utilities
+# ---------------------------
+@st.cache_data(show_spinner=False)
+def load_questions():
+    if not JSON_PATH.exists():
+        return {}
+    with open(JSON_PATH, "r", encoding="utf-8") as f:
+        data = json.load(f)
+    # 보정: 비어 있는 과목은 빈 리스트라도 유지
+    for k, v in list(data.items()):
+        if v is None:
+            data[k] = []
+    return data
 
-def init_state():
-    defaults = {
-        "page": "home",
-        "subject": None,
-        "questions": load_questions(),
-        "current_q_index": None,
-        "start_time": None,
-        "answered": False,
-        "is_correct": None,
-        "timer_expired": False,
-        "last_q_index": {s: None for s in SUBJECTS},
+def get_subject_list(qbank: dict):
+    # 문제 있는 과목만 우선 노출 (완전 빈 과목도 선택하려면 아래 주석 해제)
+    subjects = [k for k, v in qbank.items() if isinstance(v, list) and len(v) > 0]
+    if not subjects:  # 전부 비어있다면 키 전부 노출
+        subjects = list(qbank.keys())
+    return subjects
+
+def ensure_session_keys():
+    if "qbank" not in st.session_state:
+        st.session_state.qbank = load_questions()
+
+    if "subject" not in st.session_state:
+        subs = get_subject_list(st.session_state.qbank)
+        st.session_state.subject = subs[0] if subs else None
+
+    if "qidx" not in st.session_state:
+        st.session_state.qidx = 0
+
+    if "responses" not in st.session_state:
+        # responses = { subject: { qidx: {"choice": int, "is_correct": bool} } }
+        st.session_state.responses = {}
+
+def get_current_question():
+    subject = st.session_state.subject
+    qidx = st.session_state.qidx
+    qlist = st.session_state.qbank.get(subject, [])
+    if not qlist:
+        return None, 0
+    qidx = max(0, min(qidx, len(qlist) - 1))
+    st.session_state.qidx = qidx
+    return qlist[qidx], len(qlist)
+
+def record_response(subject, qidx, choice_idx, is_correct):
+    if subject not in st.session_state.responses:
+        st.session_state.responses[subject] = {}
+    st.session_state.responses[subject][qidx] = {
+        "choice": choice_idx,
+        "is_correct": is_correct,
     }
-    for k, v in defaults.items():
-        if k not in st.session_state:
-            st.session_state[k] = v
 
-def pick_new_question(subject: str):
-    q_list = st.session_state["questions"].get(subject, [])
-    if not q_list:
-        st.session_state["current_q_index"] = None
-        return
-    candidates = list(range(len(q_list)))
-    last = st.session_state["last_q_index"].get(subject)
-    if last is not None and len(candidates) > 1 and last in candidates:
-        candidates.remove(last)
-    idx = random.choice(candidates)
-    st.session_state["current_q_index"] = idx
-    st.session_state["last_q_index"][subject] = idx
+def get_saved_choice(subject, qidx):
+    try:
+        return st.session_state.responses[subject][qidx]["choice"]
+    except Exception:
+        return None
 
-def start_timer():
-    st.session_state["start_time"] = time.time()
-    st.session_state["timer_expired"] = False
-    st.session_state["answered"] = False
-    st.session_state["is_correct"] = None
+# ---------------------------
+# Sidebar
+# ---------------------------
+ensure_session_keys()
+qbank = st.session_state.qbank
+subjects = get_subject_list(qbank)
 
-def remaining_seconds() -> int:
-    if st.session_state["start_time"] is None:
-        return QUIZ_SECONDS
-    elapsed = int(time.time() - st.session_state["start_time"])
-    remain = max(0, QUIZ_SECONDS - elapsed)
-    if remain == 0 and not st.session_state["timer_expired"]:
-        st.session_state["timer_expired"] = True
-    return remain
+with st.sidebar:
+    st.header("설정")
+    if subjects:
+        new_subj = st.selectbox("교과 선택", subjects, index=subjects.index(st.session_state.subject) if st.session_state.subject in subjects else 0)
+        if new_subj != st.session_state.subject:
+            st.session_state.subject = new_subj
+            st.session_state.qidx = 0
+    else:
+        st.info("questions.json에 과목/문제를 추가해 주세요.")
 
-def fmt_mmss(sec: int) -> str:
-    m, s = divmod(sec, 60)
-    return f"{m:02d}:{s:02d}"
+    # 현재 과목의 전체 문항 수
+    current_list = qbank.get(st.session_state.subject, [])
+    total_q = len(current_list)
+    if total_q > 0:
+        new_idx = st.number_input("문항 번호", min_value=1, max_value=total_q, value=st.session_state.qidx + 1, step=1)
+        # number_input은 1-based로 보였으면 좋으니 내부는 0-based로 보정
+        if (new_idx - 1) != st.session_state.qidx:
+            st.session_state.qidx = int(new_idx - 1)
 
-# -------------------------------
-# Pages
-# -------------------------------
-def page_home():
-    st.title("수학 문제 앱 (Streamlit)")
-    st.write("1) **시작** → 2) 교과 선택 → 3) 문제 풀이(5분 타이머)")
-    if st.button("시작", type="primary"):
-        st.session_state["page"] = "select"
-        st.experimental_rerun()
+    st.markdown("---")
+    st.caption("Tip: 이미지/JSON 경로가 맞지 않으면 아래 본문에 오류가 표시됩니다.")
 
-def page_select_subject():
-    st.title("교과 선택")
-    subject = st.radio("교과", SUBJECTS, index=0, horizontal=True)
-    c1, c2 = st.columns(2)
-    with c1:
-        if st.button("문제 시작", type="primary"):
-            st.session_state["subject"] = subject
-            pick_new_question(subject)
-            start_timer()
-            st.session_state["page"] = "quiz"
-            st.experimental_rerun()
-    with c2:
-        if st.button("← 처음으로"):
-            st.session_state["page"] = "home"
-            st.experimental_rerun()
+# ---------------------------
+# Main UI
+# ---------------------------
+st.title("🧮 수학 문제 풀이")
 
-def page_quiz():
-    st.title("문제 풀이")
-    subject = st.session_state.get("subject")
-    q_idx = st.session_state.get("current_q_index")
-    q_list = st.session_state["questions"].get(subject, [])
+if not subjects or st.session_state.subject is None:
+    st.warning("로드할 문제가 없습니다. data/questions.json을 확인해 주세요.")
+    st.stop()
 
-    top = st.container()
-    with top:
-        l, r = st.columns([3, 1])
-        with l:
-            st.markdown(f"**교과:** {subject}")
-        with r:
-            remain = remaining_seconds()
-            st.metric("남은 시간", fmt_mmss(remain))
-            # 선택 라이브러리(없어도 동작): 자동 1초 새로고침
-            try:
-                from streamlit_autorefresh import st_autorefresh
-                st_autorefresh(interval=1000, key="_timer_autorefresh")
-            except Exception:
-                st.caption("⏱ 자동 새로고침을 쓰려면 requirements.txt에 streamlit-autorefresh를 추가하세요.")
+question, total_q = get_current_question()
+subject = st.session_state.subject
+qidx = st.session_state.qidx
 
-    if q_idx is None or not q_list:
-        st.warning("해당 교과 문제 없음. data/questions.json을 추가해 보세요.")
-        if st.button("교과 다시 선택"):
-            st.session_state["page"] = "select"
-            st.experimental_rerun()
-        return
+if question is None:
+    st.info(f"현재 선택된 교과 **{subject}** 에 등록된 문제가 없습니다.")
+    st.stop()
 
-    q = q_list[q_idx]
-    st.subheader("문제")
-    st.write(q["question"])
-
-    disabled = st.session_state["answered"] or st.session_state["timer_expired"]
-    if st.session_state["timer_expired"]:
-        st.error("⏰ 시간 종료! 다음 문제로 넘어가세요.")
-
-    st.divider()
-    st.subheader("선지")
-
-    cols = st.columns(2)
-    pressed_idx = None
-    for i, choice in enumerate(q["choices"]):
-        with cols[i % 2]:
-            if st.button(choice, key=f"choice_btn_{i}", disabled=disabled):
-                pressed_idx = i
-
-    if pressed_idx is not None and not disabled:
-        st.session_state["answered"] = True
-        is_correct = (pressed_idx == q["answer"])
-        st.session_state["is_correct"] = is_correct
-        if is_correct:
-            st.success("정답입니다! ✅")
+# 문제 이미지 & 본문
+colL, colR = st.columns([1, 1])
+with colL:
+    st.subheader(f"{subject} - {qidx+1}번")
+    qtext = question.get("question", "").strip()
+    if qtext:
+        st.markdown(qtext)
+with colR:
+    img_path = question.get("image", "")
+    if not img_path:
+        st.error("이미지 경로가 비어 있습니다. questions.json을 확인하세요.")
+    else:
+        if not Path(img_path).exists():
+            st.error(f"이미지 파일을 찾을 수 없습니다.\n`{img_path}`")
         else:
-            st.error("오답입니다. ❌")
-        with st.expander("해설 보기"):
-            st.write(q.get("explanation", "해설이 없습니다."))
+            st.image(img_path, caption=f"{subject} {qidx+1}번", use_container_width=True)
 
-    st.divider()
-    a, b, c = st.columns(3)
-    with a:
-        if st.button("← 교과 선택으로"):
-            st.session_state["page"] = "select"
-            st.experimental_rerun()
-    with b:
-        if st.button("현재 문제 다시 풀기"):
-            start_timer()
-            st.session_state["answered"] = False
-            st.session_state["is_correct"] = None
-            st.experimental_rerun()
-    with c:
-        if st.button("다음 문제 →", type="primary"):
-            pick_new_question(subject)
-            start_timer()
-            st.experimental_rerun()
+# 선택지
+raw_choices = question.get("choices", [])
+choices = raw_choices if raw_choices else ["①", "②", "③", "④", "⑤"]
 
-# -------------------------------
-# Main
-# -------------------------------
-init_state()
-page = st.session_state["page"]
-if page == "home":
-    page_home()
-elif page == "select":
-    page_select_subject()
-else:
-    page_quiz()
+# 저장된 응답(있으면 복원)
+saved_choice = get_saved_choice(subject, qidx)
+preselect_index = saved_choice if (isinstance(saved_choice, int) and 0 <= saved_choice < len(choices)) else 0
+
+selected = st.radio("정답을 선택하세요", options=list(range(len(choices))), format_func=lambda i: choices[i], index=preselect_index, horizontal=True)
+
+# 정답 확인
+correct_index = question.get("answer", None)
+
+btn_cols = st.columns([1, 1, 1, 2])
+with btn_cols[0]:
+    check = st.button("정답 확인", type="primary")
+with btn_cols[1]:
+    prev = st.button("이전 문제", disabled=(qidx == 0))
+with btn_cols[2]:
+    nxt = st.button("다음 문제", disabled=(qidx >= total_q - 1))
+
+# 판정 & 네비게이션
+if check:
+    if correct_index is None:
+        st.error("questions.json에 `answer`가 비어 있습니다.")
+    else:
+        # ⚠️ 가정: answer는 0-based 인덱스 (예: 2 → '③')
+        is_correct = (selected == int(correct_index))
+        record_response(subject, qidx, selected, is_correct)
+        if is_correct:
+            st.success(f"정답입니다! ✅  (선택: {choices[selected]})")
+        else:
+            try:
+                st.error(f"오답입니다. ❌  (선택: {choices[selected]}, 정답: {choices[int(correct_index)]})")
+            except Exception:
+                st.error("오답입니다. 정답 인덱스가 choices 범위를 벗어납니다. JSON을 확인하세요.")
+
+if prev:
+    st.session_state.qidx = max(0, qidx - 1)
+    st.rerun()
+
+if nxt:
+    st.session_state.qidx = min(total_q - 1, qidx + 1)
+    st.rerun()
+
+# 하단: 진행 요약
+st.markdown("---")
+resp = st.session_state.responses.get(subject, {})
+solved = len(resp)
+correct_count = sum(1 for v in resp.values() if v.get("is_correct"))
+if total_q > 0:
+    st.write(f"**진행 상황** — {subject}: {solved}/{total_q} 문항, 정답 {correct_count}개")
