@@ -15,7 +15,7 @@
     {
       "question": "",
       "image": "data/images/수(상)/수(상)3.png",
-      "choices": ["①","②","③","④"."⑤"],
+      "choices": ["①","②","③","④","⑤"],
       "answer": 3
     }
   ],
@@ -35,7 +35,7 @@
     {
       "question": "",
       "image": "data/images/수(상)/수(하)3.png",
-      "choices": ["①","②","③","④"."⑤"],
+      "choices": ["①","②","③","④","⑤"],
       "answer": 3
     }
   ],
@@ -55,7 +55,7 @@
     {
       "question": "",
       "image": "data/images/수(상)/수13.png",
-      "choices": ["①","②","③","④"."⑤"],
+      "choices": ["①","②","③","④","⑤"],
       "answer": 3
     }
   ],
@@ -75,7 +75,7 @@
     {
       "question": "",
       "image": "data/images/수(상)/수23.png",
-      "choices": ["①","②","③","④"."⑤"],
+      "choices": ["①","②","③","④","⑤"],
       "answer": 3
     }
   ],
