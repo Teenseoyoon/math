@@ -39,7 +39,7 @@ def ensure_session_keys():
     if "responses" not in st.session_state:
         st.session_state.responses = {}
     if "started" not in st.session_state:
-        st.session_state.started = False  # ← 시작 화면 토글
+        st.session_state.started = False  # 시작 화면 토글
 
 def get_current_question():
     subject = st.session_state.subject
@@ -78,10 +78,9 @@ if not st.session_state.started:
     st.subheader("교과 선택형 이미지 문제")
     st.markdown(
         "- 교과: **수(상), 수(하), 수1, 수2**\n"
-        "- 각 교과별 **3문제**, 보기 **①~⑤**\n"
+        "- 각 교과별 **4문제**, 보기 **①~⑤**\n"
         "- 이미지는 GitHub 저장소의 `data/images/교과명/` 에서 불러옵니다."
     )
-    # 간단한 진행 요약(있다면)
     total_subjects_with_q = sum(1 for k, v in qbank.items() if isinstance(v, list) and len(v) > 0)
     total_questions = sum(len(v) for v in qbank.values() if isinstance(v, list))
     st.caption(f"현재 등록된 문제: {total_subjects_with_q}개 교과, 총 {total_questions}문항")
@@ -89,8 +88,6 @@ if not st.session_state.started:
     if st.button("문제 풀기 시작 ▶", type="primary", use_container_width=True):
         st.session_state.started = True
         st.rerun()
-
-        )
     st.stop()
 
 # ---------------------------
