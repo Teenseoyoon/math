@@ -1,13 +1,22 @@
 {
   "수(상)": [
     {
-      "question": "다음 중 함수 y=x^2-4x+5의 최소값은?",
-      "choices": ["0", "1", "2", "3"],
-      "answer": 1,
-      "explanation": "(x-2)^2+1 ⇒ 최소값 1"
+      "question": "",
+      "image": "data/images/수(상)/q1.png",
+      "choices": ["1","2","3","4"],
+      "answer": 2
+    },
+    {
+      "question": "",
+      "image": "data/images/수(상)/q2.png",
+      "choices": ["가","나","다","라"],
+      "answer": 0
+    },
+    {
+      "question": "",
+      "image": "data/images/수(상)/q3.png",
+      "choices": ["①","②","③","④"],
+      "answer": 3
     }
-  ],
-  "수(하)": [],
-  "수1": [],
-  "수2": []
+  ]
 }
