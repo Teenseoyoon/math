@@ -90,21 +90,6 @@ if not st.session_state.started:
         st.session_state.started = True
         st.rerun()
 
-    with st.expander("폴더 구조 보기"):
-        st.code(
-            "math/\n"
-            " ├─ app.py\n"
-            " ├─ requirements.txt\n"
-            " ├─ runtime.txt\n"
-            " ├─ data/\n"
-            " │    ├─ questions.json\n"
-            " │    └─ images/\n"
-            " │         ├─ 수(상)/q1.png q2.png q3.png\n"
-            " │         ├─ 수(하)/q1.png q2.png q3.png\n"
-            " │         ├─ 수1/q1.png q2.png q3.png\n"
-            " │         └─ 수2/q1.png q2.png q3.png\n"
-            " └─ README.md",
-            language="text",
         )
     st.stop()
 
