@@ -42,19 +42,19 @@
   "수1": [
     {
       "question": "",
-      "image": "data/images/수1/수11.jpg",
+      "image": "data/images/수1/수11.png",
       "choices": ["①","②","③","④","⑤"],
       "answer": 2
     },
     {
       "question": "",
-      "image": "data/images/수1/수12.jpg",
+      "image": "data/images/수1/수12.png",
       "choices": ["①","②","③","④","⑤"],
       "answer": 0
     },
     {
       "question": "",
-      "image": "data/images/수1/수13.jpg",
+      "image": "data/images/수1/수13.png",
       "choices": ["①","②","③","④","⑤"],
       "answer": 3
     }
