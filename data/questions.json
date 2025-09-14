@@ -10,13 +10,13 @@
       "question": "",
       "image": "data/images/수(상)/수(상)2.png",
       "choices": ["①","②","③","④","⑤"],
-      "answer": 0
+      "answer": 3
     },
     {
       "question": "",
       "image": "data/images/수(상)/수(상)3.png",
       "choices": ["①","②","③","④","⑤"],
-      "answer": 3
+      "answer": 2
     }
   ],
   "수(하)": [
@@ -36,7 +36,7 @@
       "question": "",
       "image": "data/images/수(하)/수(하)3.png",
       "choices": ["①","②","③","④","⑤"],
-      "answer": 3
+      "answer": 4
     }
   ],
   "수1": [
