@@ -64,13 +64,13 @@
       "question": "",
       "image": "data/images/수2/수21.jpg",
       "choices": ["①","②","③","④","⑤"],
-      "answer": 0
+      "answer": 3
     },
     {
       "question": "",
       "image": "data/images/수2/수22.jpg",
       "choices": ["①","②","③","④","⑤"],
-      "answer": 0
+      "answer": 3
     },
     {
       "question": "",
