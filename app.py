@@ -9,10 +9,21 @@ JSON_PATH = DATA_DIR / "questions.json"
 st.set_page_config(page_title="수학 문제 풀이", page_icon="🧮", layout="centered")
 
 # ---------------------------
+# Cache-busting helpers (파일 변경 자동 반영)
+# ---------------------------
+def _json_mtime_ns() -> int:
+    """questions.json의 수정시간(ns). 캐시 키로 사용해 파일이 바뀌면 자동 재로딩."""
+    try:
+        return JSON_PATH.stat().st_mtime_ns
+    except FileNotFoundError:
+        return 0
+
+# ---------------------------
 # Utilities
 # ---------------------------
 @st.cache_data(show_spinner=False)
-def load_questions():
+def load_questions(cache_bust: int):
+    """cache_bust는 _json_mtime_ns()를 넣어 캐시 무효화를 유도"""
     if not JSON_PATH.exists():
         return {}
     with open(JSON_PATH, "r", encoding="utf-8") as f:
@@ -30,7 +41,7 @@ def get_subject_list(qbank: dict):
 
 def ensure_session_keys():
     if "qbank" not in st.session_state:
-        st.session_state.qbank = load_questions()
+        st.session_state.qbank = load_questions(_json_mtime_ns())
     if "subject" not in st.session_state:
         subs = get_subject_list(st.session_state.qbank)
         st.session_state.subject = subs[0] if subs else None
@@ -69,6 +80,10 @@ def get_saved_choice(subject, qidx):
 # App Start
 # ---------------------------
 ensure_session_keys()
+
+# 앱이 렌더될 때마다 최신 파일 mtime으로 재로딩 보정 (파일 바뀌면 자동 갱신)
+st.session_state.qbank = load_questions(_json_mtime_ns())
+
 qbank = st.session_state.qbank
 subjects = get_subject_list(qbank)
 
@@ -96,6 +111,15 @@ if not st.session_state.started:
 with st.sidebar:
     st.header("설정")
     st.button("처음 화면으로", on_click=lambda: st.session_state.update({"started": False}), use_container_width=True)
+
+    # 🔄 문제 새로고침: 캐시 비우고 최신 JSON 재로딩 + 판정 초기화
+    if st.button("문제 새로고침", use_container_width=True):
+        load_questions.clear()  # cache_data 비우기
+        st.session_state.qbank = load_questions(_json_mtime_ns())
+        st.session_state.responses = {}
+        st.success("questions.json을 다시 불러왔습니다.")
+        st.rerun()
+
     st.markdown("---")
 
     if subjects:
@@ -107,6 +131,8 @@ with st.sidebar:
         if new_subj != st.session_state.subject:
             st.session_state.subject = new_subj
             st.session_state.qidx = 0
+            st.session_state.responses = {}  # 과목 바꿀 때 이전 판정 초기화 권장
+            st.rerun()
     else:
         st.info("questions.json에 과목/문제를 추가해 주세요.")
 
@@ -182,7 +208,8 @@ if check:
     if correct_index is None:
         st.error("questions.json에 `answer`가 비어 있습니다.")
     else:
-        is_correct = (selected == int(correct_index))  # 0-based 정답 인덱스 가정
+        # ⚠️ 정답 인덱스는 0=① … 4=⑤ 기준
+        is_correct = (selected == int(correct_index))
         record_response(subject, qidx, selected, is_correct)
         if is_correct:
             st.success(f"정답입니다! ✅  (선택: {choices[selected]})")
